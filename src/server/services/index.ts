@@ -1,0 +1,10 @@
+export * as sales from "./sales";
+export * as orders from "./orders";
+export * as tables from "./tables";
+export * as menu from "./menu";
+export * as inventory from "./inventory";
+export * as customers from "./customers";
+export * as staff from "./staff";
+export * as reports from "./reports";
+export * as overview from "./overview";
+export * as tenant from "./tenant";

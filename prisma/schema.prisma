@@ -1,0 +1,419 @@
+// Kitchi — PostgreSQL schema.
+//
+// The MVP runs on in-memory repositories (src/server/repositories) that mirror these models.
+// To go live: implement the same repository functions with Prisma, keeping the signature
+// `repos(ctx: TenantContext)` so every query stays scoped by organisation/restaurant/outlet.
+//
+// Conventions
+//  - Money is stored as integer paise (Int / BigInt for aggregates).
+//  - Every tenant-owned row carries organizationId (+ restaurantId / outletId where relevant)
+//    and is indexed on it. Never accept these from clients; derive them from the session.
+//  - Timestamps are timestamptz.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RestaurantType {
+  CAFE
+  RESTAURANT
+  QSR
+  CLOUD_KITCHEN
+  BAKERY
+  BAR
+  OTHER
+}
+enum RoleKey {
+  OWNER
+  MANAGER
+  CASHIER
+  WAITER
+  CHEF
+}
+enum FoodType {
+  VEG
+  NON_VEG
+  EGG
+}
+enum OrderType {
+  DINE_IN
+  TAKEAWAY
+  DELIVERY
+}
+enum OrderStatus {
+  OPEN
+  PREPARING
+  READY
+  COMPLETED
+  CANCELLED
+}
+enum PaymentStatus {
+  UNPAID
+  PAID
+}
+enum PaymentMethod {
+  UPI
+  CASH
+  CARD
+}
+enum TableStatus {
+  AVAILABLE
+  OCCUPIED
+  BILLING
+  RESERVED
+}
+enum StockReason {
+  PURCHASE
+  WASTAGE
+  CORRECTION
+  INTERNAL
+  SALE
+}
+
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  plan        String   @default("TRIAL")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  restaurants Restaurant[]
+  memberships Membership[]
+  roles       Role[]
+}
+
+model Restaurant {
+  id              String         @id @default(cuid())
+  organizationId  String
+  name            String
+  type            RestaurantType
+  legalName       String?
+  gstEnabled      Boolean        @default(true)
+  gstin           String?
+  defaultTaxRate  Int            @default(5)
+  setup           Json           @default("{}") // { menu, tables, tax, firstOrder }
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  organization    Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  outlets         Outlet[]
+  categories      Category[]
+  menuItems       MenuItem[]
+  modifierGroups  ModifierGroup[]
+  customers       Customer[]
+  employees       Employee[]
+
+  @@index([organizationId])
+}
+
+model Outlet {
+  id             String   @id @default(cuid())
+  organizationId String
+  restaurantId   String
+  name           String
+  city           String
+  address        String
+  phone          String
+  fssai          String?
+  settings       Json     @default("{}") // payments, printers, receipt footer
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  restaurant     Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  tables         Table[]
+  orders         Order[]
+  inventory      InventoryItem[]
+  stockMovements StockMovement[]
+  employees      Employee[]
+
+  @@index([organizationId, restaurantId])
+}
+
+model User {
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  createdAt   DateTime @default(now())
+  memberships Membership[]
+}
+
+/// Role definitions are data so organisations can later define custom roles.
+model Role {
+  id             String       @id @default(cuid())
+  organizationId String
+  key            RoleKey
+  name           String
+  permissions    String[]
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  memberships    Membership[]
+
+  @@unique([organizationId, key])
+}
+
+/// A user's access to a restaurant, limited to specific outlets, with one role.
+model Membership {
+  id             String       @id @default(cuid())
+  userId         String
+  organizationId String
+  restaurantId   String
+  roleId         String
+  outletIds      String[]
+  createdAt      DateTime     @default(now())
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role           Role         @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, restaurantId])
+  @@index([organizationId])
+}
+
+model Category {
+  id           String     @id @default(cuid())
+  restaurantId String
+  name         String
+  sortOrder    Int        @default(0)
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  items        MenuItem[]
+
+  @@unique([restaurantId, name])
+}
+
+model MenuItem {
+  id           String     @id @default(cuid())
+  restaurantId String
+  categoryId   String
+  name         String
+  description  String     @default("")
+  price        Int // paise, GST-exclusive
+  taxRate      Int        @default(5)
+  foodType     FoodType
+  sku          String
+  imageUrl     String?
+  available    Boolean    @default(true)
+  popular      Boolean    @default(false)
+  deletedAt    DateTime? // soft delete: historical orders keep their lines
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  category     Category   @relation(fields: [categoryId], references: [id])
+  variants     MenuVariant[]
+  modifierGroups MenuItemModifierGroup[]
+
+  @@unique([restaurantId, sku])
+  @@index([restaurantId, categoryId])
+  @@index([restaurantId, available])
+}
+
+model MenuVariant {
+  id         String   @id @default(cuid())
+  menuItemId String
+  name       String
+  price      Int
+  sortOrder  Int      @default(0)
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  @@index([menuItemId])
+}
+
+model ModifierGroup {
+  id           String     @id @default(cuid())
+  restaurantId String
+  name         String
+  maxSelect    Int        @default(1)
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  modifiers    Modifier[]
+  items        MenuItemModifierGroup[]
+
+  @@index([restaurantId])
+}
+
+model Modifier {
+  id      String        @id @default(cuid())
+  groupId String
+  name    String
+  price   Int
+  group   ModifierGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([groupId])
+}
+
+model MenuItemModifierGroup {
+  menuItemId String
+  groupId    String
+  menuItem   MenuItem      @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  group      ModifierGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@id([menuItemId, groupId])
+}
+
+model Table {
+  id             String      @id @default(cuid())
+  outletId       String
+  name           String
+  seats          Int
+  section        String      @default("Main hall")
+  status         TableStatus @default(AVAILABLE)
+  currentOrderId String?     @unique
+  reservedFor    String?
+  reservedAt     DateTime?
+  occupiedSince  DateTime?
+  outlet         Outlet      @relation(fields: [outletId], references: [id], onDelete: Cascade)
+
+  @@unique([outletId, name])
+}
+
+model Customer {
+  id           String     @id @default(cuid())
+  restaurantId String
+  name         String
+  phone        String
+  email        String?
+  createdAt    DateTime   @default(now())
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  orders       Order[]
+
+  @@unique([restaurantId, phone])
+}
+
+model Order {
+  id            String        @id @default(cuid())
+  outletId      String
+  /// Daily sequence per outlet (1001, 1002, …) — unique together with businessDate.
+  number        Int
+  businessDate  DateTime      @db.Date
+  type          OrderType
+  tableId       String?
+  customerId    String?
+  status        OrderStatus   @default(OPEN)
+  paymentStatus PaymentStatus @default(UNPAID)
+  subtotal      Int
+  discount      Int           @default(0)
+  tax           Int
+  roundOff      Int           @default(0)
+  total         Int
+  note          String?
+  createdById   String
+  /// Idempotency key from the POS / offline queue.
+  clientRef     String?
+  startedAt     DateTime?
+  readyAt       DateTime?
+  servedAt      DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  outlet        Outlet        @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  customer      Customer?     @relation(fields: [customerId], references: [id])
+  items         OrderItem[]
+  payments      Payment[]
+  events        OrderEvent[]
+
+  @@unique([outletId, businessDate, number])
+  @@unique([outletId, clientRef])
+  @@index([outletId, createdAt])
+  @@index([outletId, status])
+  @@index([customerId])
+}
+
+model OrderItem {
+  id         String  @id @default(cuid())
+  orderId    String
+  menuItemId String
+  name       String // snapshot
+  variantName String?
+  basePrice  Int
+  unitPrice  Int
+  qty        Int
+  taxRate    Int
+  foodType   FoodType
+  note       String?
+  order      Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  modifiers  OrderItemModifier[]
+
+  @@index([orderId])
+  @@index([menuItemId])
+}
+
+model OrderItemModifier {
+  id          String    @id @default(cuid())
+  orderItemId String
+  name        String // snapshot
+  price       Int
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+
+  @@index([orderItemId])
+}
+
+model Payment {
+  id        String        @id @default(cuid())
+  orderId   String
+  method    PaymentMethod
+  amount    Int
+  reference String?
+  createdAt DateTime      @default(now())
+  order     Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([createdAt])
+}
+
+/// Append-only audit trail.
+model OrderEvent {
+  id      String   @id @default(cuid())
+  orderId String
+  actor   String
+  action  String
+  detail  String?
+  at      DateTime @default(now())
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, at])
+}
+
+model InventoryItem {
+  id        String   @id @default(cuid())
+  outletId  String
+  name      String
+  unit      String
+  stock     Decimal  @db.Decimal(12, 3)
+  minLevel  Decimal  @db.Decimal(12, 3)
+  updatedAt DateTime @updatedAt
+  outlet    Outlet   @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  movements StockMovement[]
+
+  @@unique([outletId, name])
+}
+
+model StockMovement {
+  id              String        @id @default(cuid())
+  outletId        String
+  inventoryItemId String
+  reason          StockReason
+  delta           Decimal       @db.Decimal(12, 3)
+  balanceAfter    Decimal       @db.Decimal(12, 3)
+  note            String?
+  createdBy       String
+  createdAt       DateTime      @default(now())
+  outlet          Outlet        @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  item            InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+
+  @@index([outletId, createdAt])
+  @@index([inventoryItemId, createdAt])
+}
+
+model Employee {
+  id            String     @id @default(cuid())
+  restaurantId  String
+  outletId      String
+  userId        String?
+  name          String
+  role          RoleKey
+  phone         String
+  shiftStartMin Int // minutes after midnight, outlet-local
+  shiftEndMin   Int
+  active        Boolean    @default(true)
+  restaurant    Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  outlet        Outlet     @relation(fields: [outletId], references: [id], onDelete: Cascade)
+
+  @@index([restaurantId, outletId])
+}

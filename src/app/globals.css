@@ -1,0 +1,134 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #fafaf8;
+  --surface: #ffffff;
+  --muted: #f3f2ee;
+  --muted-2: #ebe9e3;
+  --border: #e7e5df;
+  --border-strong: #d6d3ca;
+  --fg: #1b1b19;
+  --fg-muted: #66655e;
+  --fg-subtle: #97958c;
+  --brand: #2c5a4b;
+  --brand-hover: #234a3d;
+  --brand-fg: #ffffff;
+  --brand-soft: #e7efeb;
+  --danger: #b2432f;
+  --danger-soft: #faece8;
+  --warn: #9a6a14;
+  --warn-soft: #faf2df;
+  --ok: #2c7552;
+  --ok-soft: #e6f2ec;
+  --info: #3f5a85;
+  --ring: rgba(44, 90, 75, 0.35);
+}
+
+@theme inline {
+  --color-background: var(--bg);
+  --color-surface: var(--surface);
+  --color-muted: var(--muted);
+  --color-muted-2: var(--muted-2);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-fg: var(--brand-fg);
+  --color-brand-soft: var(--brand-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --shadow-pop: 0 1px 2px rgba(20, 20, 18, 0.06), 0 8px 24px -6px rgba(20, 20, 18, 0.14);
+  --shadow-sheet: -1px 0 0 var(--border), -16px 0 40px -12px rgba(20, 20, 18, 0.16);
+}
+
+@layer base {
+html {
+  font-size: 15px;
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "cv11", "ss01";
+  letter-spacing: -0.006em;
+}
+* {
+  border-color: var(--border);
+}
+::selection {
+  background: var(--brand-soft);
+}
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+button,
+[role="button"],
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+.scroll-none {
+  scrollbar-width: none;
+}
+.scroll-none::-webkit-scrollbar {
+  display: none;
+}
+}
+
+/* Overlay motion — 150–200ms, never blocks input */
+@keyframes k-fade-in { from { opacity: 0 } to { opacity: 1 } }
+@keyframes k-fade-out { from { opacity: 1 } to { opacity: 0 } }
+@keyframes k-pop-in { from { opacity: 0; transform: translateY(6px) scale(0.985) } to { opacity: 1; transform: none } }
+@keyframes k-pop-out { from { opacity: 1; transform: none } to { opacity: 0; transform: translateY(4px) scale(0.99) } }
+@keyframes k-slide-in { from { transform: translateX(24px); opacity: 0 } to { transform: none; opacity: 1 } }
+@keyframes k-slide-out { from { transform: none; opacity: 1 } to { transform: translateX(24px); opacity: 0 } }
+@keyframes k-sheet-up { from { transform: translateY(24px); opacity: 0 } to { transform: none; opacity: 1 } }
+@keyframes k-pulse-once { 0% { background-color: var(--brand-soft) } 100% { background-color: transparent } }
+@keyframes k-shimmer { 0% { background-position: -200px 0 } 100% { background-position: calc(200px + 100%) 0 } }
+
+.anim-overlay[data-state="open"] { animation: k-fade-in 150ms ease-out; }
+.anim-overlay[data-state="closed"] { animation: k-fade-out 120ms ease-in; }
+.anim-pop[data-state="open"] { animation: k-pop-in 170ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.anim-pop[data-state="closed"] { animation: k-pop-out 120ms ease-in; }
+.anim-slide[data-state="open"] { animation: k-slide-in 200ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.anim-slide[data-state="closed"] { animation: k-slide-out 140ms ease-in; }
+.anim-flash { animation: k-pulse-once 700ms ease-out; }
+.skeleton {
+  background: linear-gradient(90deg, var(--muted) 0, var(--muted-2) 40%, var(--muted) 80%);
+  background-size: 200px 100%;
+  background-repeat: no-repeat;
+  background-color: var(--muted);
+  animation: k-shimmer 1.3s infinite linear;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+
+@media print {
+  .no-print { display: none !important; }
+}
