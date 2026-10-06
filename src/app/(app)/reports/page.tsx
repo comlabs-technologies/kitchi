@@ -110,7 +110,7 @@ function Payments({ ctx, range }: { ctx: Ctx; range: R }) {
   if (total === 0) return <p className="rounded-xl border border-line bg-surface py-14 text-center text-[13px] text-fg-muted">No payments in this period.</p>;
   return (
     <>
-      <div className="flex h-3 overflow-hidden rounded-full bg-muted" role="img" aria-label="Payment mix">{rows.map((r, i) => <div key={r.method} style={{ width: `${r.sharePct}%`, background: ["#2c5a4b", "#8fa89d", "#cfd8d3"][i] }} />)}</div>
+      <div className="flex h-3 overflow-hidden rounded-full bg-muted" role="img" aria-label="Payment mix">{rows.map((r, i) => <div key={r.method} style={{ width: `${r.sharePct}%`, background: ["#064327", "#8fa89d", "#cfd8d3"][i] }} />)}</div>
       <Table><THead><tr><Th>Method</Th><Th align="right">Payments</Th><Th align="right">Share</Th><Th align="right">Amount</Th></tr></THead><TBody>
         {rows.map((r) => <tr key={r.method} className="transition-colors hover:bg-muted/50"><Td className="font-medium">{METHOD[r.method]}</Td><Td align="right" className="tnum">{r.count}</Td><Td align="right" className="tnum text-fg-muted">{r.sharePct.toFixed(1)}%</Td><Td align="right" className="tnum font-medium">{formatMoneyPrecise(r.amount)}</Td></tr>)}
         <tr className="bg-muted/40 font-semibold"><Td>Total collected</Td><Td align="right" className="tnum">{rows.reduce((s, r) => s + r.count, 0)}</Td><Td align="right" className="tnum">100%</Td><Td align="right" className="tnum">{formatMoneyPrecise(total)}</Td></tr>

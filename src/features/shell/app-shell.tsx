@@ -95,7 +95,7 @@ function SidebarContent({ collapsed, visible, pathname }: { collapsed: boolean; 
     <>
       <div className={cn("flex h-[52px] shrink-0 items-center px-3.5", collapsed && "justify-center px-0")}>
         <Link href="/overview" aria-label="Kitchi home" className="rounded-md">
-          {collapsed ? <LogoMark /> : <Wordmark />}
+          {collapsed ? <LogoMark /> : <Wordmark className="h-[22px]" />}
         </Link>
       </div>
       <nav className="scroll-thin flex-1 overflow-y-auto px-2 py-1" aria-label="Main">

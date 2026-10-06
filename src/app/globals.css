@@ -10,10 +10,10 @@
   --fg: #1b1b19;
   --fg-muted: #66655e;
   --fg-subtle: #97958c;
-  --brand: #2c5a4b;
-  --brand-hover: #234a3d;
+  --brand: #064327;
+  --brand-hover: #04361f;
   --brand-fg: #ffffff;
-  --brand-soft: #e7efeb;
+  --brand-soft: #e3eee8;
   --danger: #b2432f;
   --danger-soft: #faece8;
   --warn: #9a6a14;
@@ -21,7 +21,7 @@
   --ok: #2c7552;
   --ok-soft: #e6f2ec;
   --info: #3f5a85;
-  --ring: rgba(44, 90, 75, 0.35);
+  --ring: rgba(6, 67, 39, 0.35);
 }
 
 @theme inline {

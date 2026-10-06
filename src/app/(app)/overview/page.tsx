@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 
 const RANGES = [{ value: "today", label: "Today" }, { value: "7d", label: "7 days" }, { value: "30d", label: "30 days" }];
 const METHOD: Record<string, string> = { UPI: "UPI", CASH: "Cash", CARD: "Card" };
-const METHOD_COLOR: Record<string, string> = { UPI: "#2c5a4b", CASH: "#8fa89d", CARD: "#cfd8d3" };
+const METHOD_COLOR: Record<string, string> = { UPI: "#064327", CASH: "#8fa89d", CARD: "#cfd8d3" };
 
 export default async function OverviewPage({ searchParams }: { searchParams: Promise<{ range?: string }> }) {
   const ctx = await requirePage("overview.view");

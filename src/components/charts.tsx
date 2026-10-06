@@ -40,19 +40,19 @@ export function SalesChart({ data, height = 240, prevLabel = "Previous", kind = 
         {kind === "bar" ? (
           <BarChart data={data} margin={{ top: 8, right: 20, bottom: 0, left: 0 }}>
             {common}
-            <Bar dataKey="value" fill="#2c5a4b" radius={[3, 3, 0, 0]} maxBarSize={28} isAnimationActive={false} />
+            <Bar dataKey="value" fill="#064327" radius={[3, 3, 0, 0]} maxBarSize={28} isAnimationActive={false} />
           </BarChart>
         ) : (
           <AreaChart data={data} margin={{ top: 8, right: 20, bottom: 0, left: 0 }}>
             <defs>
               <linearGradient id="fillBrand" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#2c5a4b" stopOpacity={0.16} />
-                <stop offset="100%" stopColor="#2c5a4b" stopOpacity={0} />
+                <stop offset="0%" stopColor="#064327" stopOpacity={0.16} />
+                <stop offset="100%" stopColor="#064327" stopOpacity={0} />
               </linearGradient>
             </defs>
             {common}
             <Line type="monotone" dataKey="prev" stroke="#b9b6ab" strokeWidth={1.5} strokeDasharray="4 4" dot={false} isAnimationActive={false} />
-            <Area type="monotone" dataKey="value" stroke="#2c5a4b" strokeWidth={2} fill="url(#fillBrand)" dot={false} activeDot={{ r: 3.5, strokeWidth: 0, fill: "#2c5a4b" }} isAnimationActive={false} />
+            <Area type="monotone" dataKey="value" stroke="#064327" strokeWidth={2} fill="url(#fillBrand)" dot={false} activeDot={{ r: 3.5, strokeWidth: 0, fill: "#064327" }} isAnimationActive={false} />
           </AreaChart>
         )}
       </ResponsiveContainer>
